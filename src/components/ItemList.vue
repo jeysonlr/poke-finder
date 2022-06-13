@@ -1,6 +1,7 @@
 <script setup>
 import IconDismissCircle from '@/assets/icons/dismiss-circle.svg?component'
 import LikeButton from '@/components/LikeButton.vue'
+import OrderButtons from '@/components/OrderButtons.vue'
 import { API_URL, LOADING_DELAY } from '@/helpers/constants'
 import { capitalize, padZeros, removeCharacter } from '@/helpers/filters'
 import { promiseTimeout, useFetch, useTitle } from '@vueuse/core'
@@ -11,6 +12,8 @@ const emit = defineEmits(['clear-search', 'item-clicked'])
 
 // Starting reactive object to handle the state of the API fetch.
 let fetchState = $ref({ isFetching: true, error: null, data: null })
+
+let orderBy = $ref('id')
 
 // When the component is mounted in the DOM.
 onMounted(async () => {
@@ -31,11 +34,15 @@ const items = $computed(() => {
 
 // Computed list of API results filtered by search text.
 const filteredItems = $computed(() => {
-  return items.filter(
-    (item) =>
-      item.name.indexOf(props.search.toLowerCase()) > -1 ||
-      item.id === Number(props.search)
-  )
+  return items
+    .sort((a, b) => {
+      return orderBy === 'id' ? a.id - b.id : a.name.localeCompare(b.name)
+    })
+    .filter(
+      (item) =>
+        item.name.indexOf(props.search.toLowerCase()) > -1 ||
+        item.id === Number(props.search)
+    )
 })
 
 // Computed message with count of items found after a search.
@@ -50,6 +57,10 @@ const itensFoundMessage = $computed(() => {
 watchEffect(() =>
   useTitle(itensFoundMessage ? `${itensFoundMessage} - PokéDex` : 'PokéDex')
 )
+
+function orderItemsBy(key) {
+  orderBy = key
+}
 </script>
 
 <template>
@@ -90,6 +101,10 @@ watchEffect(() =>
         <IconDismissCircle class="w-4 h-4" />
         <span>Clear</span>
       </button>
+    </div>
+
+    <div>
+      <OrderButtons @sort-by="orderItemsBy" />
     </div>
 
     <ol
